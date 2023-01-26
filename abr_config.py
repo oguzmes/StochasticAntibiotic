@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sat Oct  1 12:37:27 2022
-
-@author: asus
-"""
 import os 
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
