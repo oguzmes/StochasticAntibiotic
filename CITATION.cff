@@ -1,0 +1,33 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Stochastic Antibiotic
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Oguz
+    family-names: Mesum
+    email: oguzmesum@sabanciuniv.edu
+    affiliation: Sabanci University
+    orcid: 'https://orcid.org/0000-0003-4925-7248'
+  - given-names: Burak
+    family-names: Kocuk
+    email: burakkocuk@sabanciuniv.edu
+    affiliation: Sabanci University
+    orcid: 'https://orcid.org/0000-0003-4925-7248'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.1003150
+    description: doi descriptionu
+repository-code: 'https://github.com/oguzmes/StochasticAntibiotic'
+url: 'https://github.com/oguzmes/StochasticAntibiotic/README.md'
+abstract: Abstract buraya
+keywords:
+  - stochastic-optimization
+  - more.
+license: MIT
+version: 1.0.0
+date-released: '2023-02-04'
