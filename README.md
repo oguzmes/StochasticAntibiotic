@@ -13,7 +13,7 @@ This repository contains the code for the paper ...
 Requirements can also be found in `requirements.txt`.
 
 2. Clone the repository:`
-git clone https://github.com/oguzmes/StochastiAntibiotic.git
+git clone https://github.com/oguzmes/StochasticAntibiotic.git
 
 3. Running Code and Getting Results
 	Tool can be used from CLI after installing the necessary dependencies and cloning the repository. The information on how to use the tool is also defined within itself.
