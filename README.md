@@ -17,10 +17,10 @@ git clone https://github.com/oguzmes/StochasticAntibiotic.git
 
 3. Running Code and Getting Results
 	Tool can be used from CLI after installing the necessary dependencies and cloning the repository. The information on how to use the tool is also defined within itself.
-	```sh
+	```bash
 	python ABR.py -h
 	```
-	```sh
+	```bash
 	usage: StochasticAntibiotic [-h] [-n [N]] [-is [INITIALSTATE]]
                             [-ts [TARGETSTATE]] [-ps]
                             [-sm {DP, Multistage, Strong2stage, Weak2stage}]
@@ -54,21 +54,20 @@ git clone https://github.com/oguzmes/StochasticAntibiotic.git
 	Developed by O. Mesum, Assoc. Prof. B. Kocuk
 	```
 	The following code will find best antibiotic treatment plan starting from genotype *1110* to genotype *0001* in *6* steps using *Strong2stage* method. Solver is time limit is set to *1000* seconds and matrix sampling size is *1000* for both evaluator and optimizer. If successful within time limit it will plot the solution aswell.
-	```sh
-	python ABR.py data.xlsx -is 1110 -n 6 -ts 0001 -sm Strong2stage -mss 100 -tl 1000 -ps
+	```bash
+	python ABR.py --dataset msx255_SuppData2017_GRME_ABR.xlsx --initialState 1110 --n 6 --targetState 0000 --solutionMethod Strong2stage
 	```
-	```sh
-	Matrix_useCase=optimization_type=cpm_s=100 does not exist, generating from scratch.
-	Matrix_useCase=evaluator_type=cpm_s=100 does not exist, generating from scratch.
-	Saving results N6_1110-0001_Strong2stage_cpm_solution.xlsx
-	Saving plot N6_1110-0001_Strong2stage_cpm_plot.png	
+	```bash
+	Returning Matrix_useCase=optimization_type=cpm_s=10000 from existing file.
+	Returning Matrix_useCase=evaluator_type=cpm_s=10000 from existing file.
+	Saved N6_1110-0000_Strong2stage_cpm_solution.xlsx under ..\Data\Solutions.
+	Saved N6_1110-0000_Strong2stage_cpm_plot.png under ..\Data\Solutions.	
 	```
 
-	
 	Results of each instances can be found under  `..\Data\Solutions`.
 
 ## Data
-The data used in this research can be found under repository named `data.xlsx`.
+The data used in this research can be found under repository named `msx255_SuppData2017_GRME_ABR.xlsx`.
 
 ## Known Issues 
 The code has not been tested on Python versions other than 3.7.
