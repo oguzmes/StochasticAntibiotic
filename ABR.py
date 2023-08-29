@@ -14,11 +14,16 @@ from datetime import datetime
 import networkx as nx
 import abr_config as config
 from copy import deepcopy
+import matplotlib.patches as mpatches
+import matplotlib.cm as mplcm
+import matplotlib.colors as colors
 import argparse
 import textwrap
 
+import warnings
+warnings.simplefilter(action='ignore', category=numpy.VisibleDeprecationWarning)
+    
 
-# "[1,1,1,1]" -> [1, 1, 1, 1]
 def ConvertStringToNumList(string):
     listem = string[1:-1].split(",")
     empty = list()
@@ -27,17 +32,14 @@ def ConvertStringToNumList(string):
         empty.append(int(listem[i]))
     return empty
 
-
-
-# [1,1,1,1] -> '1111'
 def list_to_fixed(label):
     a = ""
     for i in label:
         a += str(i)
     return a
 
-# "0000" -> [0,0,0,0]
-def Str2IntList(x):  
+
+def Str2IntList(x):  # "0000" -> [0,0,0,0]
     return [int(i) for i in x]
 
 
@@ -146,11 +148,26 @@ def ComputeExactObjective(p, solMatrix, T_matrices, q):
     return round(float(curr*q.T), 3)
 
 
+def findMaxLayerSize(data):
+    layer_sums = {}
+    
+    for key, value in data.items():
+        layer = key.split('_')[1]
+    
+        if layer in layer_sums:
+            layer_sums[layer] += value
+        else:
+            layer_sums[layer] = value
+    
+    max_layer = max(layer_sums, key=layer_sums.get)
+    
+    layer_sums[max_layer]    
+    return layer_sums[max_layer]    
+    
+
 
 class TimeMachine:
-    
     def __init__(self, data):
-        self.instance_name = data.split(".")[0]
         self.readData(config.curr_dir + os.sep + data)
         self.neighbors = {str(l1): [l2 for l2 in self.labels if IsNeighborLog(
             l1, l2)] for l1 in self.labels}
@@ -164,6 +181,7 @@ class TimeMachine:
         # get sheetnames in workbook excluding first one which is key
         sheet_list = wb.sheetnames[1:]
 
+        # if rr2 exists get rr2 if not get rr1
         indexes_for_extraction = list()
         for i in range(len(sheet_list)):
             indexes_for_extraction.append(i)
@@ -201,6 +219,10 @@ class TimeMachine:
         self.drug_growth = drug_growth
         self.labels = labels
         self.g = int(math.log2(len(self.labels)))
+        self.extracted_antibiotics_name_dose = {k:v.split(" rr")[0] for k,v in extracted_antibiotics.items()}
+        self.extracted_antibiotics_name = {k:v.split(" ")[0] for k,v in extracted_antibiotics.items()}
+        
+        # return all_growth, extracted_antibiotics, dfs, labels
 
 
     def CreateProbMatrix(self, growth, matrixType):
@@ -221,7 +243,7 @@ class TimeMachine:
             i = i + 1
         return NormalizeMatrix(T)
 
-    # func samples drug by randomly selecting growth rates
+    # samples drug by randomly selecting growth rates
     def SampleDrug(self, antibiotic_index, matrixType, seed=-1):
         if seed != -1:
             random.seed(seed)
@@ -329,6 +351,7 @@ class TimeMachine:
         y_simplified = pd.DataFrame(temparr, index=idx, columns=cols[:-1])
         return u_df, y_simplified
 
+        # Lambda can either be a binary variable OR 1
     def AddStochasticVectorConstraint(self, model, u, Lambda):
         model.addConstr((u.sum(0, '*') == Lambda))
 
@@ -401,6 +424,7 @@ class TimeMachine:
         model = Model('TimeMachineSingleStage')
         model.setParam('OutputFlag', 0)
         model.setParam("TimeLimit", TimeLimit)
+        # change this and see the observation
         model.setParam('MIPGap', 0.001)
         T_matrices = list(T_matricesIn.values())
 
@@ -463,7 +487,7 @@ class TimeMachine:
         model.setObjective(quicksum(q[0, j]*Uf_vars[M-1][0, j]
                            for j in range(d)), GRB.MAXIMIZE)
 
-        # BestBD
+        # #BestBD siniri
         if isBestBDConstraint == True and isMultiStage:
             model.addConstrs(quicksum(Uf_vars[n][0, s]
                                       for s in range(d)) == 1 for n in range(M))
@@ -479,8 +503,10 @@ class TimeMachine:
 
     def Strong2Stage(self, p, q, T_matricesIn, N, solutionMethod, S,
                      lessSteps, TimeLimit=300):
+        # enviroment=Env()
         model = Model('TimeMachineMILP')
         model.setParam('OutputFlag', 0)
+        # change this and see the observation
         model.setParam('MIPGapAbs', 0.001)
         model.setParam('TimeLimit', TimeLimit)
 
@@ -545,12 +571,16 @@ class TimeMachine:
                                          Uf_vars, Lambda)
 
         del model
+    #    model.__del__()
+    #    file.flush()
+
         return data
+        # return optValList, timeElapsed, bbNode, T_orderedList #for multiple solution
         
     # =============================================================================    
     # Generates antibotics by sampling and taking average
     # =============================================================================
-    def GenerateMatrix(self, matrixType,useCase = "optimization", matrixSamplingSize = 2000):
+    def GenerateMatrix(self, matrixType, useCase = "optimization", matrixSamplingSize = 2000):
         matrixFileName = f"Matrix_useCase={useCase}_type={matrixType}_s={matrixSamplingSize}"
         HashingFunction = HashingOptimizer if useCase == "optimization" else HashingEvaluator
         if os.path.isfile(os.path.join(config.matrix_files, matrixFileName)):
@@ -559,7 +589,7 @@ class TimeMachine:
         else:
             print(matrixFileName,"does not exist, generating from scratch.")
 
-            with multiprocessing.Pool(processes=1) as pool:
+            with multiprocessing.Pool(processes=int(os.cpu_count()/2)) as pool:
                 T_matrices_temp = pool.starmap(self.CreateSampleForSelectedMatrix,
                                                             itertools.product(list(self.extracted_antibiotics.keys()),
                                                                               [matrixSamplingSize], ["matrixReduction"], 
@@ -581,14 +611,15 @@ class TimeMachine:
     # =============================================================================
     # Plot solution of fitness landscape
     # =============================================================================
-    def PlotSolution(self, T_matrices, solution,N, initialState, final, matrixType, solutionMethod):
+    def PlotSolution(self, T_matrices, solution,N, initialState, final):
+        
         Uf_solns = solution["Uf_solns"]
         T_solns = solution["solMatrix"].to_numpy()
         labels = self.labels
         isMultiStage = 1 if T_solns.shape[0] != 1 else 0
         
         labels_str = [list_to_fixed(label) for label in labels]
-        extracted_antibiotics = self.extracted_antibiotics
+        extracted_antibiotics = self.extracted_antibiotics_name
         extracted_antibiotics = {k+1:v for k,v in extracted_antibiotics.items()}
         extracted_antibiotics[0] = "I"
         d = self.d
@@ -616,14 +647,32 @@ class TimeMachine:
         else:
             K_first = extracted_antibiotics[T_solns[ConvertBase10(Str2IntList(initialState_str)), 0]]
         
-    
+            
+        cm = plt.get_cmap('tab20')
+
+        T_soln_matrix = numpy.matrix(T_solns)
+        # replace nonetypes with 0 in T_soln_matrix
+        T_soln_matrix[T_soln_matrix == None] = 0        
+        # flatten T_solns_matrix and get unique antibiotics as integers
+        uniqueAntibiotics = list(set(T_soln_matrix.flatten().tolist()[0]))
+
+        # assign distinguishing colors to uniqueAntibiotics using colors.Normalize and ScalarMappable
+        cNorm  = colors.Normalize(vmin=0, vmax= len(uniqueAntibiotics))
+        scalarMap = mplcm.ScalarMappable(norm=cNorm, cmap=cm)
+        colorMap={extracted_antibiotics[int(uniqueAntibiotics[i])] : scalarMap.to_rgba(i) for i in range(len(uniqueAntibiotics))}
+        colorMap["I"] = "white"
+
+
         nodes_tobeadded = [(initialState_str+"_0", {"label": initialState_str, "n": 0,
                                                     "pos": (0,labels_ypos[initialState_str]),
                                                     "p":1,
-                                                    "K":K_first})]
+                                                    "K":K_first,
+                                                    "color":colorMap[K_first]})]
+        node_appear_tol = 0.01
+        # determine nodes to be added filter on 
         for n in range(1,N+1):
             for label, p in Uf_solns[n].iteritems():
-                if p > 0:
+                if p > node_appear_tol:
                     label = ConvertStringToNumList(label)
                     label_str = list_to_fixed(label)
 
@@ -631,11 +680,15 @@ class TimeMachine:
                         K = extracted_antibiotics[T_solns[0,n]] if n < N else "" 
                     else:
                         K = extracted_antibiotics[T_solns[ConvertBase10(label), n]] if n < N else ""
-                        
+                    if  n < N:
+                        selectedColor = colorMap[K]
+                    else:
+                        selectedColor = "white"
                     nodes_tobeadded.append((label_str+f"_{n}", {"label": label_str, "n": n,
                                                               "pos": (labels_xpos[n-1],labels_ypos[label_str]),
                                                               "p": round(p,3),
-                                                              "K": K}))
+                                                              "K": K,
+                                                              "color":selectedColor}))
         # create plot and position nodes
         G = nx.DiGraph()
         G.add_nodes_from(nodes_tobeadded)
@@ -647,10 +700,11 @@ class TimeMachine:
         
         fig=plt.figure(figsize=((N+1)*x_increment,20))
         nx.draw_networkx_labels(G,pos,node_labels)
+        nx.draw_networkx_nodes(G, pos)
         
         # create edges
         edges=[]
-        Ttol=0.001
+        edge_appear_tol=0.01
         for n in range(N):
             for lsi in labels:
                 si=ConvertBase10(lsi)
@@ -660,52 +714,93 @@ class TimeMachine:
                     for lsj in labels:
                         sj=ConvertBase10(lsj)
                         transitionProb=round(T_matrices[usedAntibiotic][si,sj],3)
-                        if transitionProb>Ttol:
+                        if transitionProb>edge_appear_tol:
                             edges.append((getNodebyAttribute(G, {"n":n,"label":list_to_fixed(ConvertBase2(si,4))}),
                                           getNodebyAttribute(G, {"n":n+1,"label":list_to_fixed(ConvertBase2(sj,4))}),transitionProb))
 
         # delete unnecessary edges
         edges = [edge for edge in edges if edge[0] != "NotFound!" and edge[1] != "NotFound!"]
-        
         G.add_weighted_edges_from(edges)
         labels_on_edge=nx.get_edge_attributes(G,'weight')
         weights=tuple(labels_on_edge.values())
         # nx.draw_networkx_edge_labels(G,pos,edge_labels=labels_on_edge,label_pos=0.65)
         nx.draw_networkx(G,pos,node_size=[max(1250,v *5000) for v in nx.get_node_attributes(G,"p").values()],
                           edge_cmap=plt.cm.get_cmap('YlGn'),width=tuple(8*i for i in list(weights)),
-                          with_labels=False)
+                          with_labels=False, node_color = list(nx.get_node_attributes(G, "color").values()))
         
         plt.gca().set_facecolor("gray")
         plt.title(initialState_str+"->"+final_str+f" N={N}\nSolutionMethod={solutionMethod} MatrixType={matrixType}",
                   fontsize = 40)
         
-        outputName = f"N{N}_{initialState_str}-{final_str}_{solutionMethod}_{matrixType}_plot.png"
-        print("Saving plot", outputName)
-        plt.savefig(config.solution_root + os.sep +  outputName)
         
-def SaveSolution(solution,initialState, targetState, solutionMethod, n,matrixSamplingSize,matrixType):
-    stats = pd.DataFrame(index = ["OptVal", "EvaVal","SolutionMethod",
-                                  "bbNode","elapsedTime","matrixSamplingSize"])
-    stats["Info"] = [solution["optVal"], solution["EvaVal"], solutionMethod,
-                     solution["bbNode"], solution["elapsedTime"], matrixSamplingSize]
-    si = list_to_fixed(initialState)
-    sf = list_to_fixed(targetState)
-    outputName = f"N{n}_{si}-{sf}_{solutionMethod}_{matrixType}_solution.xlsx"
-    print("Saving results", outputName)
-    fileLoc = config.solution_root + os.sep + outputName 
-    with pd.ExcelWriter(fileLoc, mode = "w") as writer:
-        stats.to_excel(writer, sheet_name = "Info")
-        solution["Uf_solns"].to_excel(writer, sheet_name = "U_values")
-        solution["solMatrix"].to_excel(writer, sheet_name = "Solution")
-            
-    
+        handles = [mpatches.Patch(color = v,label = k) for k,v in colorMap.items()]
+        plt.legend(loc='lower center',handles=handles,markerscale = 2.0,
+                   fontsize=15,bbox_transform=fig.transFigure, ncol = 20,
+                   fancybox=True, shadow = True)
+        
+        
+        outputName = f"N{N}_{initialState_str}-{final_str}_{solutionMethod}_{matrixType}_plot.png"
+        
+        plt.savefig(config.solution_root + os.sep +  outputName)
+        print(f"Saved {outputName} under {config.solution_root}.")
 
-def main(args):
-    TMInstance = TimeMachine(data = args.dataset)
+        
+    def SaveSolution(self, solution):
+        stats = pd.DataFrame(index = ["OptVal", "EvaVal","SolutionMethod",
+                                      "bbNode","elapsedTime","matrixSamplingSize"])
+        stats["Info"] = [solution["optVal"], solution["EvaVal"], solutionMethod,
+                         solution["bbNode"], solution["elapsedTime"], matrixSamplingSize]
+        si = list_to_fixed(initialState)
+        sf = list_to_fixed(finalState)
+        outputName = f"N{n}_{si}-{sf}_{solutionMethod}_{matrixType}_solution.xlsx"
+        fileLoc = config.solution_root + os.sep + outputName
+        extracted_antibiotics = self.extracted_antibiotics_name_dose
+        extracted_antibiotics = {k+1:v for k,v in extracted_antibiotics.items()}
+        extracted_antibiotics[0] = "I"
+        
+        with pd.ExcelWriter(fileLoc, mode = "w") as writer:
+            stats.to_excel(writer, sheet_name = "Info")
+            solution["Uf_solns"].to_excel(writer, sheet_name = "U_values")
+            solution["solMatrix"].replace(extracted_antibiotics).to_excel(writer, 
+                                                                          sheet_name = "Solution")
+            
+        print(f"Saved {outputName} under {config.solution_root}.")
+        
+def parse_args():
+    # fmt: off
+    parser = argparse.ArgumentParser(prog = "StochasticAntibiotic",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                     description = textwrap.dedent('''Tool used to evaluate multiplication of matrices
+                                     daha fazlasi, yazilabilir'''),
+                                     epilog = "Developed by O. Mesum, Assoc. Prof. B. Kocuk")
+                                     
+    parser.add_argument("--dataset", type = str, default = "msx255_SuppData2017_GRME_ABR.xlsx")
+    parser.add_argument("--n", default= 3, nargs='?',type = int, help ="step size")
+    parser.add_argument("--initialState", default="1011", nargs='?', help ="initial state selection")
+    parser.add_argument("--targetState",  default="0000", nargs='?', help ="target state selection")
+    parser.add_argument("--plotSolution",
+                        action="store_true",default = True,  help ="use if you want to plot solution")
+    parser.add_argument("--solutionMethod", default = "DP",
+                        choices= ["DP", "Multistage", "Strong2stage", "Weak2stage"],
+                        help = "solution method selection")
+    parser.add_argument("--matrixSamplingSize", default = 10000, type=int,
+                        help = "matrix sampling size selection")
+    parser.add_argument("--matrixType", default = "cpm",
+                        choices=["epm", "cpm"], type = str,
+                         help ="matrix type selection")
+    parser.add_argument("--timeLimit", default = 3600, type = int,
+                        help = "time limit (seconds) for solvers")
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    TMInstance = TimeMachine(data = args.dataset) 
     n = args.n # 1, 2, 3 ...
-    TimeLimit = args.timeLimit # MILP solver time
+    TimeLimit = args.timeLimit # Solver TimeLimit
     initialState = Str2IntList(args.initialState)
-    targetState = Str2IntList(args.targetState)
+    finalState = Str2IntList(args.targetState)
     solutionMethod = args.solutionMethod # DP, Multistage, Strong2stage, Weak2stage    
     matrixType = args.matrixType # epm, cpm
     matrixSamplingSize = args.matrixSamplingSize
@@ -715,55 +810,16 @@ def main(args):
     
     T_matrices_evaluator = TMInstance.GenerateMatrix(matrixType,useCase = "evaluator",
                                                        matrixSamplingSize = matrixSamplingSize)
-    print("Solving..")
-    solution = TMInstance.Solve(initialState, n, targetState, solutionMethod,
+    
+    solution = TMInstance.Solve(initialState, n, finalState, solutionMethod,
                                         matrixType, T_matrices_optimization,
                                         T_matrices_evaluator, TimeLimit)
-    if solution["EvaVal"] != "TE":
-        print("Solved to optimality.")
-        # save solution
-        SaveSolution(solution,initialState, targetState, solutionMethod, n,matrixSamplingSize,matrixType)
+    # save solution
+    TMInstance.SaveSolution(solution)
     
-        # plot and save png
-        if args.plotSolution:
-            TMInstance.PlotSolution(T_matrices_optimization, solution, n, 
-                                    initialState, targetState, matrixType, solutionMethod)
-    else:
-        print("Time limit exceeded.")
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog = "StochasticAntibiotic",
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-                                     description = textwrap.dedent('''Tool used to evaluate multiplication of matrices
-                                     daha fazlasi, yazilabilir'''),
-                                     epilog = "Developed by O. Mesum, Assoc. Prof. B. Kocuk")
-    parser.add_argument("dataset", type = str)
-    parser.add_argument("-n","--n_stepsize",dest = "n", default= 4, nargs='?',type = int, help ="step size")
-    parser.add_argument("-is","--initialState", dest = "initialState", default="1111", nargs='?', help ="initial state selection")
-    parser.add_argument("-ts","--targetState", dest = "targetState",  default="0000", nargs='?', help ="target state selection")
-    parser.add_argument("-ps","--plotSolution", dest = "plotSolution",
-                        action="store_true",default = False,  help ="use if you want to plot solution")
-    parser.add_argument("-sm","--solutionMethod", dest = "solutionMethod", default = "DP", choices= ["DP", "Multistage", "Strong2stage", "Weak2stage"],
-                        help = "solution method selection")
-    parser.add_argument("-mss","--matrixSamplingSize", dest = "matrixSamplingSize",  default = 10000, type=int,
-                        help = "matrix sampling size selection")
-    parser.add_argument("-mt", "--matrixType", default = "cpm", choices=["epm", "cpm"], type = str,
-                         help ="matrix type selection")
-    parser.add_argument("-tl", "--timeLimit", dest = "timeLimit", default = 3600, type = int,
-                        help = "time limit (seconds) for solvers")
-    args = parser.parse_args()
-    main(args)
-    
-
-
-
-
-
-
-
-
-
+    # plot and save png
+    if args.plotSolution:
+        TMInstance.PlotSolution(T_matrices_optimization, solution, n, initialState, finalState)
     
     
     
