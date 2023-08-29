@@ -21,36 +21,31 @@ git clone https://github.com/oguzmes/StochasticAntibiotic.git
 	python ABR.py -h
 	```
 	```bash
-	usage: StochasticAntibiotic [-h] [-n [N]] [-is [INITIALSTATE]]
-                            [-ts [TARGETSTATE]] [-ps]
-                            [-sm {DP, Multistage, Strong2stage, Weak2stage}]
-                            [-mss MATRIXSAMPLINGSIZE] [-mt {epm,cpm}]
-                            [-tl TIMELIMIT]
-                            dataset
-
+	usage: StochasticAntibiotic [-h] [--dataset DATASET] [--n [N]] [--initialState [INITIALSTATE]]
+	                            [--targetState [TARGETSTATE]] [--plotSolution]
+	                            [--solutionMethod {DP,Multistage,Strong2stage,Weak2stage}]
+	                            [--matrixSamplingSize MATRIXSAMPLINGSIZE] [--matrixType {epm,cpm}] [--timeLimit TIMELIMIT]
+	
 	Tool used to evaluate multiplication of matrices daha fazlasi, yazilabilir
-
-	positional arguments:
-	  dataset
-
+	
 	optional arguments:
 	  -h, --help            show this help message and exit
-	  -n [N], --n_stepsize [N]
-	                        step size (default: 4)
-	  -is [INITIALSTATE], --initialState [INITIALSTATE]
-	                        initial state selection (default: 1111)
-	  -ts [TARGETSTATE], --targetState [TARGETSTATE]
+	  --dataset DATASET
+	  --n [N]               step size (default: 3)
+	  --initialState [INITIALSTATE]
+	                        initial state selection (default: 1011)
+	  --targetState [TARGETSTATE]
 	                        target state selection (default: 0000)
-	  -ps, --plotSolution   use if you want to plot solution (default: False)
-	  -sm {DP, Multistage, Strong2stage, Weak2stage}, --solutionMethod {DP, Multistage, Strong2stage, Weak2stage}
+	  --plotSolution        use if you want to plot solution (default: True)
+	  --solutionMethod {DP,Multistage,Strong2stage,Weak2stage}
 	                        solution method selection (default: DP)
-	  -mss MATRIXSAMPLINGSIZE, --matrixSamplingSize MATRIXSAMPLINGSIZE
+	  --matrixSamplingSize MATRIXSAMPLINGSIZE
 	                        matrix sampling size selection (default: 10000)
-	  -mt {epm,cpm}, --matrixType {epm,cpm}
+	  --matrixType {epm,cpm}
 	                        matrix type selection (default: cpm)
-	  -tl TIMELIMIT, --timeLimit TIMELIMIT
+	  --timeLimit TIMELIMIT
 	                        time limit (seconds) for solvers (default: 3600)
-
+	
 	Developed by O. Mesum, Assoc. Prof. B. Kocuk
 	```
 	The following code will find best antibiotic treatment plan starting from genotype *1110* to genotype *0001* in *6* steps using *Strong2stage* method. Solver is time limit is set to *1000* seconds and matrix sampling size is *1000* for both evaluator and optimizer. If successful within time limit it will plot the solution aswell.
