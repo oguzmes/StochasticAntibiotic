@@ -139,11 +139,10 @@ def ComputeExactObjective(p, solMatrix, T_matrices, q):
     for n in range(N):
         u = numpy.zeros(d)
         for s in range(d):
-            for si in range(di):
-                k = solMatrix[si, n]
-                if k != None:
-                    next_distro = curr[0, s] * T_matrices[k][s, :]
-                    u = u + next_distro
+            k = solMatrix[s, n]
+            if k != None:
+                next_distro = curr[0, s] * T_matrices[k][s, :]
+                u = u + next_distro
         curr = u
     return round(float(curr*q.T), 3)
 
@@ -778,8 +777,6 @@ def parse_args():
     parser.add_argument("--n", default= 3, nargs='?',type = int, help ="step size")
     parser.add_argument("--initialState", default="1011", nargs='?', help ="initial state selection")
     parser.add_argument("--targetState",  default="0000", nargs='?', help ="target state selection")
-    parser.add_argument("--plotSolution",
-                        action="store_true",default = True,  help ="use if you want to plot solution")
     parser.add_argument("--solutionMethod", default = "DP",
                         choices= ["DP", "Multistage", "Strong2stage", "Weak2stage"],
                         help = "solution method selection")
@@ -818,8 +815,7 @@ if __name__ == '__main__':
     TMInstance.SaveSolution(solution)
     
     # plot and save png
-    if args.plotSolution:
-        TMInstance.PlotSolution(T_matrices_optimization, solution, n, initialState, finalState)
+    TMInstance.PlotSolution(T_matrices_optimization, solution, n, initialState, finalState)
     
     
     
