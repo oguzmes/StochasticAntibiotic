@@ -1,6 +1,6 @@
 # A Stochastic Programming Approach to the Antibiotics Time Machine Problem
 
-This repository contains the code for the paper A Stochastic Programming Approach to the Antibiotics Time Machine Problem
+This repository contains the code for the paper A Stochastic Programming Approach to the Antibiotics Time Machine Problem.
 
 ## Authors
 - Oğuz Mesüm ([@oguzmes](https://github.com/oguzmes))
@@ -16,10 +16,12 @@ This repository contains the code for the paper A Stochastic Programming Approac
  - networkx 2.5
  - gurobipy 10.0.0
 
-2. Data
-The data used in this research can be found under repository named `msx255_SuppData2017_GRME_ABR.xlsx`.
 
 Requirements can also be found in `requirements.txt`.
+
+2. Data
+- The data used in this research can be found under repository named `msx255_SuppData2017_GRME_ABR.xlsx`.
+
 
 ### Clone the repository:
 	git clone https://github.com/oguzmes/StochasticAntibiotic.git
@@ -33,9 +35,7 @@ Tool can be used from CLI after installing the necessary dependencies and clonin
 				    [--targetState [TARGETSTATE]] [--plotSolution]
 				    [--solutionMethod {DP,Multistage,Strong2stage,Weak2stage}]
 				    [--matrixSamplingSize MATRIXSAMPLINGSIZE] [--matrixType {epm,cpm}] [--timeLimit TIMELIMIT]
-	
-	Tool used to evaluate multiplication of matrices daha fazlasi, yazilabilir
-	
+		
 	optional arguments:
 	  -h, --help            show this help message and exit
 	  --dataset DATASET
@@ -59,7 +59,8 @@ The following code will find best antibiotic treatment plan starting from genoty
 
 ```bash
 python ABR.py --dataset msx255_SuppData2017_GRME_ABR.xlsx --initialState 1110 --n 6 --targetState 0000 --solutionMethod Strong2stage
-     
+```
+```bash
 Matrix_useCase=optimization_type=cpm_s=10000 does not exist, generating from scratch.
 Matrix_useCase=evaluator_type=cpm_s=10000 does not exist, generating from scratch.
 Saved N6_1110-0000_Strong2stage_cpm_solution.xlsx under ..\Data\Solutions.
@@ -107,7 +108,8 @@ Also notice node sizes and arc widths are different from each other. This is due
 
 ```bash
 python ABR.py --dataset msx255_SuppData2017_GRME_ABR.xlsx --initialState 1111 --n 5 --targetState 0000 --solutionMethod DP
-     
+```
+```bash
 Returning Matrix_useCase=optimization_type=cpm_s=10000 from existing file.
 Returning Matrix_useCase=evaluator_type=cpm_s=10000 from existing file.
 Saved N5_1111-0000_DP_cpm_solution.xlsx under ..\Data\Solutions.
