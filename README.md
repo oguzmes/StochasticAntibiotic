@@ -117,7 +117,7 @@ Saved N5_1110-0000_DP_cpm_plot.png under ..\Data\Solutions.
 <table>
 <tr>
 <td>
-<img src="Data/Solutions/N5_1111-0000_DP_cpm_plot.png" width="800" />
+<img src="Data/Solutions/N5_1111-0000_Multistage_cpm_plot.png" width="800" />
 
 </td>
 <td>
