@@ -125,7 +125,7 @@ Saved N5_1110-0000_DP_cpm_plot.png under ..\Data\Solutions.
 |                    | Info   |
 |:-------------------|:-------|
 | OptVal             | 0,753  |
-| EvaVal             | 634,2  |
+| EvaVal             | 0,754  |
 | SolutionMethod     | DP     |
 | bbNode             | 0      |
 | elapsedTime        | 0      |
@@ -133,6 +133,7 @@ Saved N5_1110-0000_DP_cpm_plot.png under ..\Data\Solutions.
 </td>
 </tr>
 </table>
+
 
 
 
