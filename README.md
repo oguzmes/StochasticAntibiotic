@@ -1,6 +1,6 @@
-# Research Title
+# A Stochastic Programming Approach to the Antibiotics Time Machine Problem
 
-This repository contains the code for the paper ...
+This repository contains the code for the paper A Stochastic Programming Approach to the Antibiotics Time Machine Problem
 
 ## Setup
 1. Install dependencies:
