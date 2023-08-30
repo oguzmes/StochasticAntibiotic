@@ -28,9 +28,9 @@ Requirements can also be found in `requirements.txt`.
 
 ### Running Code and Getting Results
 Tool can be used from CLI after installing the necessary dependencies and cloning the repository. The information on how to use the tool is also defined within itself.
-
-	python ABR.py -h
- 
+```bash
+python ABR.py -h
+```
 	usage: StochasticAntibiotic [-h] [--dataset DATASET] [--n [N]] [--initialState [INITIALSTATE]]
 				    [--targetState [TARGETSTATE]] [--plotSolution]
 				    [--solutionMethod {DP,Multistage,Strong2stage,Weak2stage}]
