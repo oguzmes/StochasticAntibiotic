@@ -107,7 +107,7 @@ Also notice node sizes and arc widths are different from each other. This is due
 
 
 ```bash
-python ABR.py --dataset msx255_SuppData2017_GRME_ABR.xlsx --initialState 1111 --n 5 --targetState 0000 --solutionMethod DP
+python ABR.py --dataset msx255_SuppData2017_GRME_ABR.xlsx --initialState 1111 --n 5 --targetState 0000 --solutionMethod Multistage
 ```
 ```bash
 Returning Matrix_useCase=optimization_type=cpm_s=10000 from existing file.
