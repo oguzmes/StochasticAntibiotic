@@ -126,13 +126,15 @@ Saved N5_1110-0000_DP_cpm_plot.png under ..\Data\Solutions.
 |:-------------------|:-------|
 | OptVal             | 0,753  |
 | EvaVal             | 0,754  |
-| SolutionMethod     | DP     |
-| bbNode             | 0      |
-| elapsedTime        | 0      |
+| SolutionMethod     | Multistage     |
+| bbNode             | 1      |
+| elapsedTime        | 1,769      |
 | matrixSamplingSize | 10000  |
 </td>
 </tr>
 </table>
+
+If transition probabilities and state probabilities are less than pre-defined threshold (0.01), it will not show on plot. 
 
 
 
