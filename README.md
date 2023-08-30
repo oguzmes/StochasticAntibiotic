@@ -44,7 +44,6 @@ Tool can be used from CLI after installing the necessary dependencies and clonin
 				initial state selection (default: 1011)
 	  --targetState [TARGETSTATE]
 				target state selection (default: 0000)
-	  --plotSolution        use if you want to plot solution (default: True)
 	  --solutionMethod {DP,Multistage,Strong2stage,Weak2stage}
 				solution method selection (default: DP)
 	  --matrixSamplingSize MATRIXSAMPLINGSIZE
@@ -66,15 +65,81 @@ Matrix_useCase=evaluator_type=cpm_s=10000 does not exist, generating from scratc
 Saved N6_1110-0000_Strong2stage_cpm_solution.xlsx under ..\Data\Solutions.
 Saved N6_1110-0000_Strong2stage_cpm_plot.png under ..\Data\Solutions.
 ```
+Results of each runs can be found under  `..\Data\Solutions`.
 
-Results of each instances can be found under  `..\Data\Solutions`.
+
+- Prior to solving instances the matrix sampling part might take long. So to avoid this for further replicatons and experimentation sampled matrices are saved under `..\Data\MatrixFiles`. 
+
+
+
+<table>
+<tr>
+<td>
+<img src="Data/Solutions/N6_1110-0000_Strong2stage_cpm_plot.png" width="800" />
+
+</td>
+<td>
+
+|                    | Info         |
+|:-------------------|:-------------|
+| OptVal             | 0,649        |
+| EvaVal             | 0,65         |
+| SolutionMethod     | Strong2stage |
+| bbNode             | 409          |
+| elapsedTime        | 1,311        |
+| matrixSamplingSize | 10000        |
+</td>
+</tr>
+</table>
+
+On left hand side we can see optimal antibiotic treatment plan. On right hand side there are descriptive statistics on problem instance and solver.
+- `OptVal`: Optimal objective value of the problem.
+- `EvaVal`: Evaluator objective value given optimal treatment plan.
+- `SolutionMethod`: Selected solution method for problem instance.
+- `bbNode`: Number of branch and bound node used in optimizer.
+- `elapsedTime`: Elapsed time for given problem instance.
+- `matrixSamplingSize`: Matrix sampling size defined in the experimentation.
+
+.xlsx file under `..\Data\Solutions` contains much more detailed statistics on problem instance. Under U_values sheet, you can find state probabilities at each timestep, and under solution you can find used antibiotics in solution.  
+
+Also notice node sizes and arc widths are different from each other. This is due to node and edges representing transition and state probabilities at each timestep.
+
+
+```bash
+python ABR.py --dataset msx255_SuppData2017_GRME_ABR.xlsx --initialState 1111 --n 5 --targetState 0000 --solutionMethod DP
+     
+Returning Matrix_useCase=optimization_type=cpm_s=10000 from existing file.
+Returning Matrix_useCase=evaluator_type=cpm_s=10000 from existing file.
+Saved N5_1111-0000_DP_cpm_solution.xlsx under ..\Data\Solutions.
+Saved N5_1110-0000_DP_cpm_plot.png under ..\Data\Solutions.
+```
+
+<table>
+<tr>
+<td>
+<img src="Data/Solutions/N5_1111-0000_DP_cpm_plot.png" width="800" />
+
+</td>
+<td>
+
+|                    | Info   |
+|:-------------------|:-------|
+| OptVal             | 0,753  |
+| EvaVal             | 634,2  |
+| SolutionMethod     | DP     |
+| bbNode             | 0      |
+| elapsedTime        | 0      |
+| matrixSamplingSize | 10000  |
+</td>
+</tr>
+</table>
+
 
 
 ## Known Issues 
 - The code has not been tested on Python versions other than 3.7.
 - The code may not work with versions of dependencies other than those specified above.
 - There aren't input checks for most of the cases.
-- Prior to solving instances the matrix sampling part might take very long. So to avoid this for multiple replicatons and experimentation new matrix samples are saved under `..\Data\MatrixFiles`.
 - Strong2Stage, Multistage, Weak2stage requires Gurobi License.
 
 
