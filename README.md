@@ -1,6 +1,7 @@
-# A Stochastic Programming Approach to the Antibiotics Time Machine Problem
-
+# [A Stochastic Programming Approach to the Antibiotics Time Machine Problem](https://doi.org/10.1101/2023.08.31.555704)
+ 
 This repository contains the code for the paper A Stochastic Programming Approach to the Antibiotics Time Machine Problem.
+
 
 ## Authors
 - Oğuz Mesüm ([@oguzmes](https://github.com/oguzmes))
