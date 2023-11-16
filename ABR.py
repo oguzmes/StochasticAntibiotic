@@ -266,8 +266,7 @@ class TimeMachine:
         p[0, ConvertBase10(initialState)] = 1  # starting from where?
         q[0, ConvertBase10(finalState)] = 1  # where do i want to end up
         WithBBConstraint = 0 if "noBB" in solutionMethod else 1
-        lessSteps = 1 if (T_matrices_optimization[0] ==
-                          numpy.identity(16)).all() else 0
+        lessSteps = 1 if (T_matrices_optimization[0] == numpy.identity(self.d)).all() else 0
         if "Strong2stage" in solutionMethod:
             data = self.Strong2Stage(p, q, T_matrices_optimization, n,
                                      solutionMethod, 1, lessSteps, TimeLimit=TimeLimit)
@@ -289,9 +288,9 @@ class TimeMachine:
         elif solutionMethod == "DP":
             f_df, y_df = self.DynamicProgramming(T_matrices_optimization, n, finalState)
             p_pos = int(numpy.where(p == 1)[1])
-            initial = ConvertBase2(p_pos, self.g)
+            # initial = ConvertBase2(p_pos, self.g)
             u_df, y_simplified = self.CalculateUvaluesFromY(T_matrices_optimization,
-                                                                     y_df, initial)
+                                                                     y_df, initialState)
             data = {"Uf_solns": u_df, "solMatrix": y_simplified,
                     "optVal": round(f_df.to_numpy()[p_pos, 0], 3),
                     "elapsedTime": 0, "bbNode": 0}
@@ -579,14 +578,15 @@ class TimeMachine:
     # =============================================================================    
     # Generates antibotics by sampling and taking average
     # =============================================================================
-    def GenerateMatrix(self, matrixType, useCase = "optimization", matrixSamplingSize = 2000):
+    def GenerateMatrix(self, matrixType, useCase = "optimization", matrixSamplingSize = 2000, force_refresh = False):
         matrixFileName = f"Matrix_useCase={useCase}_type={matrixType}_s={matrixSamplingSize}"
         HashingFunction = HashingOptimizer if useCase == "optimization" else HashingEvaluator
-        if os.path.isfile(os.path.join(config.matrix_files, matrixFileName)):
+        if os.path.isfile(os.path.join(config.matrix_files, matrixFileName)) and force_refresh == False:
             print("Returning",matrixFileName,"from existing file.")
             T_matrices = read_pkl(os.path.join(config.matrix_files, matrixFileName))
         else:
-            print(matrixFileName,"does not exist, generating from scratch.")
+            if force_refresh != True:
+                print(matrixFileName,"does not exist, generating from scratch.")
 
             with multiprocessing.Pool(processes=int(os.cpu_count()/2)) as pool:
                 T_matrices_temp = pool.starmap(self.CreateSampleForSelectedMatrix,
@@ -598,10 +598,11 @@ class TimeMachine:
             T_matrices_temp = {k: T_matrices_temp[k] for k in range(
                 len(T_matrices_temp))}
 
-            T_matrices_temp = {**{0: numpy.matrix(numpy.eye(16))}, **{
+            T_matrices_temp = {**{0: numpy.matrix(numpy.eye(self.d))}, **{
                 k+1: T_matrices_temp[k] for k in T_matrices_temp.keys()}}
             T_matrices = deepcopy(T_matrices_temp)
-            write_pkl(os.path.join(config.matrix_files, matrixFileName),T_matrices)
+            if force_refresh == False:
+                write_pkl(os.path.join(config.matrix_files, matrixFileName),T_matrices)
             del T_matrices_temp
 
         return T_matrices
@@ -610,7 +611,7 @@ class TimeMachine:
     # =============================================================================
     # Plot solution of fitness landscape
     # =============================================================================
-    def PlotSolution(self, T_matrices, solution,N, initialState, final):
+    def PlotSolution(self, T_matrices, solution,N, initialState, final, matrixType, solutionMethod):
         
         Uf_solns = solution["Uf_solns"]
         T_solns = solution["solMatrix"].to_numpy()
@@ -714,8 +715,8 @@ class TimeMachine:
                         sj=ConvertBase10(lsj)
                         transitionProb=round(T_matrices[usedAntibiotic][si,sj],3)
                         if transitionProb>edge_appear_tol:
-                            edges.append((getNodebyAttribute(G, {"n":n,"label":list_to_fixed(ConvertBase2(si,4))}),
-                                          getNodebyAttribute(G, {"n":n+1,"label":list_to_fixed(ConvertBase2(sj,4))}),transitionProb))
+                            edges.append((getNodebyAttribute(G, {"n":n,"label":list_to_fixed(ConvertBase2(si,self.g))}),
+                                          getNodebyAttribute(G, {"n":n+1,"label":list_to_fixed(ConvertBase2(sj,self.g))}),transitionProb))
 
         # delete unnecessary edges
         edges = [edge for edge in edges if edge[0] != "NotFound!" and edge[1] != "NotFound!"]
@@ -744,13 +745,13 @@ class TimeMachine:
         print(f"Saved {outputName} under {config.solution_root}.")
 
         
-    def SaveSolution(self, solution):
+    def SaveSolution(self, solution, initialState, targetState):
         stats = pd.DataFrame(index = ["OptVal", "EvaVal","SolutionMethod",
                                       "bbNode","elapsedTime","matrixSamplingSize"])
         stats["Info"] = [solution["optVal"], solution["EvaVal"], solutionMethod,
                          solution["bbNode"], solution["elapsedTime"], matrixSamplingSize]
         si = list_to_fixed(initialState)
-        sf = list_to_fixed(finalState)
+        sf = list_to_fixed(targetState)
         outputName = f"N{n}_{si}-{sf}_{solutionMethod}_{matrixType}_solution.xlsx"
         fileLoc = config.solution_root + os.sep + outputName
         extracted_antibiotics = self.extracted_antibiotics_name_dose
@@ -764,6 +765,37 @@ class TimeMachine:
                                                                           sheet_name = "Solution")
             
         print(f"Saved {outputName} under {config.solution_root}.")
+
+    def DrawT_Matrix(self, T_matrix,antibiotic_name=""): #draws fitness landscape of given antibiotic
+        G=nx.DiGraph()
+        rows,columns=T_matrix.shape
+        edges=[(list_to_fixed(ConvertBase2(row,self.g)),list_to_fixed(ConvertBase2(column,self.g)),round(T_matrix[row,column],self.g)) 
+            for row in range(rows) for column in range(columns) if T_matrix[row,column]>0.0]
+        
+        if self.g == 4:
+            fixed_positions = {"0000":(15,-12),"1000":(6,-6),"0100":(12,-6),"0010":(18,-6),"0001":(24,-6),
+                                "1100":(0,0),"1010":(6,0),"1001":(12,0),"0110":(18,0),"0101":(24,0),"0011":(30,0),
+                                "1110":(6,6),"1101":(12,6),"1011":(18,6),"0111":(24,6),"1111":(15,12)} #dict with two of the positions set
+        elif self.g == 3:    
+            fixed_positions = {"000":(18,-12),"100":(12,-6),"010":(18,-6),"001":(24,-6),
+                                "110":(12,0),"101":(18,0),"011":(24,0),
+                                "111":(18,6)} #dict with two of the positions set
+        else: # self.g == 2
+            fixed_positions = {"00":(15,-12), "10":(18,-6),
+                               "01":(24,-6), "11":(30,0)} #dict with two of the positions set
+            
+        G.add_weighted_edges_from(edges)
+        labels_on_edge = nx.get_edge_attributes(G,'weight')
+        weights = tuple(labels_on_edge.values()) 
+        fixed_nodes = fixed_positions.keys()
+        pos = nx.spring_layout(G,pos=fixed_positions,fixed = fixed_nodes,k=3)
+        fig=plt.figure(figsize=(12,8))
+        # nx.draw_networkx_edge_labels(G,pos,edge_labels=labels_on_edge,label_pos=0.25) #uncomment this to hide values on edges
+        nx.draw_networkx(G,pos,edge_color=weights,node_size=700,edge_cmap=plt.cm.get_cmap('YlGn'),width=tuple(8*i for i in list(weights)))
+        plt.gca().set_facecolor("gray")
+        plt.title(antibiotic_name)
+        plt.show()
+
         
 def parse_args():
     # fmt: off
@@ -801,21 +833,31 @@ if __name__ == '__main__':
     solutionMethod = args.solutionMethod # DP, Multistage, Strong2stage, Weak2stage    
     matrixType = args.matrixType # epm, cpm
     matrixSamplingSize = args.matrixSamplingSize
-    
+
+
     T_matrices_optimization = TMInstance.GenerateMatrix(matrixType,useCase = "optimization",
-                                                       matrixSamplingSize = matrixSamplingSize)
+                                                       matrixSamplingSize = 211)
     
     T_matrices_evaluator = TMInstance.GenerateMatrix(matrixType,useCase = "evaluator",
-                                                       matrixSamplingSize = matrixSamplingSize)
+                                                       matrixSamplingSize = 211)
+    
+    T_matrix = T_matrices_optimization[1]
+    TMInstance.DrawT_Matrix(T_matrix,"1st Antibiotic")
     
     solution = TMInstance.Solve(initialState, n, finalState, solutionMethod,
                                         matrixType, T_matrices_optimization,
                                         T_matrices_evaluator, TimeLimit)
     # save solution
-    TMInstance.SaveSolution(solution)
+    TMInstance.SaveSolution(solution, initialState, finalState)
     
     # plot and save png
-    TMInstance.PlotSolution(T_matrices_optimization, solution, n, initialState, finalState)
-    
+    TMInstance.PlotSolution(solution=solution,
+                            solutionMethod = solutionMethod,
+                            T_matrices=T_matrices_optimization, 
+                            N=n,
+                            initialState=initialState,
+                            matrixType = matrixType,
+                            final=finalState)
+                            
     
     
